@@ -105,4 +105,4 @@ if __name__ == '__main__':
         surf = pygame.transform.scale(screen, WINDOW_SIZE)
         dis.blit(surf, (0, 0))
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(6)
