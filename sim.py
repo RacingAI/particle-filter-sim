@@ -4,6 +4,8 @@ from loc_kf import KFilter
 from vel_kf import Vel_KFilter
 from  particle_filter import PFilter
 import numpy as np
+import matplotlib.pyplot as plt
+from collections import deque
 import os
 
 def noise_func(speed, max=3):
@@ -36,6 +38,7 @@ for num, barrier in enumerate(barriers):
 car_sim = CarSim(100, 147, 400, 300)
 vel_filter = Vel_KFilter(100, 147)
 particle_filter = PFilter(100, 147, map_image, barriers)
+mean_error_arr = deque(maxlen=150)
 
 
 if __name__ == '__main__':
@@ -43,6 +46,8 @@ if __name__ == '__main__':
         # Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                plt.plot(np.arange(0, len(mean_error_arr)), mean_error_arr)
+                plt.show()
                 running = False
                 pygame.quit()
                 sys.exit()
@@ -90,7 +95,8 @@ if __name__ == '__main__':
         real_v_x, real_v_y = car_sim.momentum
         pred_v_x, pred_v_x_var, pred_v_y, pred_v_y_var = vel_filter.calc_vel(odom_values, lidar_values)
 
-        pred_x, pred_y, particles, weights = particle_filter.calc_pose((pred_v_x, pred_v_y, pred_v_x_var, pred_v_y_var), lidar_values)
+        pred_x, pred_y, particles, weights, mean_error = particle_filter.calc_pose((pred_v_x, pred_v_y, pred_v_x_var, pred_v_y_var), lidar_values)
+        mean_error_arr.append(mean_error)
 
         #Draw particles - Blue
         for num, particle in enumerate(particles):
@@ -105,4 +111,4 @@ if __name__ == '__main__':
         surf = pygame.transform.scale(screen, WINDOW_SIZE)
         dis.blit(surf, (0, 0))
         pygame.display.flip()
-        clock.tick(6)
+        clock.tick(10)
