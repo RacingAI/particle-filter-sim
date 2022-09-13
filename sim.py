@@ -38,7 +38,7 @@ for num, barrier in enumerate(barriers):
 car_sim = CarSim(100, 147, 400, 300)
 vel_filter = Vel_KFilter(100, 147)
 particle_filter = PFilter(100, 147, map_image, barriers)
-mean_error_arr = deque(maxlen=150)
+mean_error_arr = deque(maxlen=2)
 
 
 if __name__ == '__main__':
@@ -46,8 +46,8 @@ if __name__ == '__main__':
         # Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                plt.plot(np.arange(0, len(mean_error_arr)), mean_error_arr)
-                plt.show()
+                # plt.plot(np.arange(0, len(mean_error_arr)), mean_error_arr)
+                # plt.show()
                 running = False
                 pygame.quit()
                 sys.exit()
@@ -70,7 +70,7 @@ if __name__ == '__main__':
                 if event.key == pygame.K_s:
                     car_sim.keys['down'] = False
             
-        screen.fill((80, 80, 200))
+        screen.fill((70, 70, 70))
         
         # Update Car and publish Odom Results    
         car_sim.update()
@@ -100,12 +100,12 @@ if __name__ == '__main__':
 
         #Draw particles - Blue
         for num, particle in enumerate(particles):
-            pygame.draw.rect(screen, (0, 255*np.power(weights[num], 1/10), 80), pygame.Rect(particle[0], particle[1], car_sim.CAR_DIM[0], car_sim.CAR_DIM[1]))
+            pygame.draw.rect(screen, (240, 100 + 155*np.power(weights[num], 1/12), 10), pygame.Rect(particle[0], particle[1], car_sim.CAR_DIM[0], car_sim.CAR_DIM[1]))
 
         #Draws real car pose - red
         car_sim.draw(screen, car_sim.rect.x, car_sim.rect.y)
         #Draws expected pose - Green
-        pygame.draw.rect(screen, (0, 255, 80), pygame.Rect(pred_x, pred_y, car_sim.CAR_DIM[0], car_sim.CAR_DIM[1]))
+        pygame.draw.rect(screen, (240, 255, 10), pygame.Rect(pred_x, pred_y, car_sim.CAR_DIM[0], car_sim.CAR_DIM[1]))
         
 
         surf = pygame.transform.scale(screen, WINDOW_SIZE)

@@ -3,7 +3,7 @@ from time import time
 from collections import deque
 import math
 
-PARTICLE_NUMBER = 500
+PARTICLE_NUMBER = 250
 E = 2.7182818
     
 def multiply(mu1, var1, mu2, var2, var_min = 0.001):
@@ -107,7 +107,6 @@ class PFilter:
             sd = 1 + 15/e_bit
             particles[:, 0] += np.random.normal(loc=0.0, scale=sd, size=PARTICLE_NUMBER)
             particles[:, 1] += np.random.normal(loc=0.0, scale=sd, size=PARTICLE_NUMBER) 
-            print("sd : ", print(sd))
 
 
         # Correct Lidar to map
@@ -187,8 +186,6 @@ class PFilter:
         #self.lidar_front_var, self.lidar_bot_var = lidar[2]#lidar[2:3]
 
         self.x1, self.y1 = self.update(odom[0:2], lidar)
-
-        #print(self.weights[10:15])
 
         return self.x1, self.y1, self.particles, self.weights, self.mean_error # particles and weights for vis
 
