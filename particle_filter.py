@@ -3,7 +3,8 @@ from time import time
 from collections import deque
 import math
 
-PARTICLE_NUMBER = 500
+PARTICLE_NUMBER = 250
+E = 2.7182818
     
 def multiply(mu1, var1, mu2, var2, var_min = 0.001):
     if var1 <= 0: var1 = var_min 
@@ -24,14 +25,15 @@ def var(x_i, x_n):
 
 class PFilter:
     def __init__(self, init_x, init_y, map_image, barriers):
-        self.x1 = init_x
-        self.y1 = init_y
-        self.particles = np.array([(init_x + np.random.normal(loc=0.0, scale=75), init_y + np.random.normal(loc=0.0, scale=50)) for i in range(PARTICLE_NUMBER)])
+        self.x1 = np.random.randint(0, 400)#init_x
+        self.y1 = np.random.randint(0, 300)#init_y
+        self.particles = np.array([(self.x1 + np.random.normal(loc=0.0, scale=150), self.y1 + np.random.normal(loc=0.0, scale=80)) for i in range(PARTICLE_NUMBER)])
         self.particle_indices = np.arange(PARTICLE_NUMBER)
         self.weights = np.ones(PARTICLE_NUMBER) / float(PARTICLE_NUMBER)
         self.map_image = map_image
         self.map_shape = self.map_image.shape
         self.barriers = barriers
+        self.mean_error = None
         
         # Sensor Variances
         self.vel_x_var = None
@@ -98,6 +100,13 @@ class PFilter:
         """
         particle_obs_front = 400 - particles[:,0] # To screen edge
         particle_obs_bot = 300 - particles[:,1] # To screen edge
+        
+        if isinstance(self.mean_error, float):
+            e_bit = 10 * np.power(E, -0.01*self.mean_error)
+            e_bit += 1
+            sd = 1 + 15/e_bit
+            particles[:, 0] += np.random.normal(loc=0.0, scale=sd, size=PARTICLE_NUMBER)
+            particles[:, 1] += np.random.normal(loc=0.0, scale=sd, size=PARTICLE_NUMBER) 
 
 
         # Correct Lidar to map
@@ -131,25 +140,31 @@ class PFilter:
             for index in bot_wrongs:
                 particle_obs_bot[index] = barrier[1] - y_index_pos[index]       
 
-        error_table = [[], []]
+        error_table = [np.array([]), np.array([])]
         error_table[0] = (observation[0] - particle_obs_front)**2
         error_table[1] = (observation[1] - particle_obs_bot)**2
 
-        for i in range(0, PARTICLE_NUMBER):
-            weight = error_table[0][i] + error_table[1][i]
-            weight /= 2
-            weight = 1/weight
-            #weight = np.power(weight, 1/some_number) Squashing Factor?
-            weights[i] = weight
+        # for i in range(0, PARTICLE_NUMBER):
+        #     weight = error_table[0][i] + error_table[1][i]
+        #     weight /= 2
+        #     weight = 1/weight
+        #     #weight = np.power(weight, 1/some_number) Squashing Factor?
+        #     weights[i] = weight
+
+        weights[:] = error_table[0][:] + error_table[1][:]
+        weights[:] /= 2
+        self.mean_error = np.median(weights)
+        weights[:] = [1/i for i in weights] 
     
+
     
-    def expected_pose(self):
+    def expected_pose(self, particles, weights):
         # returns the expected value of the pose given the particle distribution
         ## Correct shape? ... 
-        x = self.particles[:,0] * self.weights
+        x = particles[:,0] * weights
         #x /= PARTICLE_NUMBER
         x = np.sum(x)
-        y = self.particles[:,1] * self.weights
+        y = particles[:,1] * weights
         #y /= PARTICLE_NUMBER
         y = np.sum(y)
 
@@ -158,7 +173,7 @@ class PFilter:
 
     def update(self, odom, lidar):
         self.MCL(odom, lidar)
-        x, y = self.expected_pose()
+        x, y = self.expected_pose(self.particles, self.weights)
         return x, y
 
 
@@ -172,9 +187,7 @@ class PFilter:
 
         self.x1, self.y1 = self.update(odom[0:2], lidar)
 
-        print(self.weights[10:15])
-
-        return self.x1, self.y1, self.particles, self.weights # particles and weights for vis
+        return self.x1, self.y1, self.particles, self.weights, self.mean_error # particles and weights for vis
 
         
 
